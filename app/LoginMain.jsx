@@ -12,7 +12,7 @@ function LoginMain() {
 
   function login(provider) {
     if (provider === "google") {
-      signIn(provider, { callbackUrl: "/u" });
+      signIn(provider, { callbackUrl: "/dashboard" });
     } else {
       toast.error("This login feature is not available yet.");
     }
