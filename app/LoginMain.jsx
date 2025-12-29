@@ -37,7 +37,7 @@ function LoginMain() {
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-black mb-2">Mentora</h1>
           <p className="text-gray-600 text-sm">
-            Sign in to manage your auto parts inventory
+            Sign in 
           </p>
         </div>
 
