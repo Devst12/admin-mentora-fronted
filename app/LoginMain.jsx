@@ -35,7 +35,7 @@ function LoginMain() {
         className="w-full max-w-sm bg-white rounded-3xl shadow-xl p-10"
       >
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-black mb-2">Ossho Parts</h1>
+          <h1 className="text-3xl font-bold text-black mb-2">Mentora</h1>
           <p className="text-gray-600 text-sm">
             Sign in to manage your auto parts inventory
           </p>
@@ -62,7 +62,7 @@ function LoginMain() {
         {/* Footer */}
         <div className="text-center mt-6">
           <p className="text-gray-500 text-sm">
-            © {new Date().getFullYear()} Ossho Parts. All rights reserved.
+            © {new Date().getFullYear()} mentora. All rights reserved.
           </p>
         </div>
       </motion.div>
