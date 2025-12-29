@@ -23,17 +23,18 @@ export async function PUT(req, { params }) {
     const newSlug = generateCustomSlug(data.title, id);
 
     // 3. Database Update
+    // FIXED: Changed 'data.desc' to 'data.description' and 'data.comments' to 'data.commentsEnabled'
     const updatedUpload = await Upload.findByIdAndUpdate(
       id,
       { 
         title: data.title,
-        description: data.desc,
-        tags: data.tags, // This is the array from your YouTube-style tags
+        description: data.description, // Fixed
+        tags: data.tags, 
         category: data.category,
-        commentsEnabled: data.comments,
-        slug: newSlug // Update the slug to match the new title
+        commentsEnabled: data.commentsEnabled, // Fixed
+        slug: newSlug 
       },
-      { new: true } // Returns the newly updated document
+      { new: true } 
     );
 
     if (!updatedUpload) {

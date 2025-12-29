@@ -1,6 +1,6 @@
 "use client"
 import { useState } from 'react';
-import { BiSearch, BiPencil, BiTrash, BiX, BiLinkExternal } from 'react-icons/bi';
+import { BiSearch, BiPencil, BiTrash, BiX, BiLinkExternal, BiErrorAlt } from 'react-icons/bi';
 
 export default function UploadFetchList({ initialUploads, categories }) {
   const [list, setList] = useState(initialUploads);
@@ -12,6 +12,10 @@ export default function UploadFetchList({ initialUploads, categories }) {
   const [tagInput, setTagInput] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Delete State (Simplified)
+  const [deleteId, setDeleteId] = useState(null); 
+  const [deleting, setDeleting] = useState(false);
+
   // 1. Search Logic
   const filterData = async () => {
     const res = await fetch(`/api/uploads?search=${query}&category=${cat}`);
@@ -20,10 +24,26 @@ export default function UploadFetchList({ initialUploads, categories }) {
   };
 
   // 2. Delete Logic
-  const handleDelete = async (id) => {
-    if (!confirm("Are you sure you want to delete this PDF?")) return;
-    const res = await fetch(`/api/uploads/${id}`, { method: 'DELETE' });
-    if (res.ok) setList(list.filter(item => item._id !== id));
+  const initiateDelete = (id) => {
+    setDeleteId(id);
+  };
+
+  const confirmDelete = async () => {
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/uploads/${deleteId}`, { method: 'DELETE' });
+      if (res.ok) {
+        setList(list.filter(item => item._id !== deleteId));
+        setDeleteId(null); // Close modal
+      } else {
+        alert("Failed to delete file");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error deleting file");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   // 3. Edit Tags Logic
@@ -31,8 +51,10 @@ export default function UploadFetchList({ initialUploads, categories }) {
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault();
       const val = tagInput.trim().replace(',', '');
-      if (val && !editItem.tags.includes(val)) {
-        setEditItem({ ...editItem, tags: [...editItem.tags, val] });
+      const currentTags = Array.isArray(editItem.tags) ? editItem.tags : [];
+      
+      if (val && !currentTags.includes(val)) {
+        setEditItem({ ...editItem, tags: [...currentTags, val] });
         setTagInput('');
       }
     }
@@ -41,17 +63,26 @@ export default function UploadFetchList({ initialUploads, categories }) {
   // 4. Update Logic
   const handleUpdate = async () => {
     setLoading(true);
-    const res = await fetch(`/api/uploads/${editItem._id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(editItem),
-    });
-    if (res.ok) {
-      const updated = await res.json();
-      setList(list.map(item => item._id === updated._id ? updated : item));
-      setEditItem(null);
+    try {
+      const res = await fetch(`/api/uploads/${editItem._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editItem), // Sends { title, description, commentsEnabled... }
+      });
+
+      if (res.ok) {
+        const updated = await res.json();
+        setList(list.map(item => item._id === updated._id ? updated : item));
+        setEditItem(null);
+      } else {
+        const err = await res.json();
+        alert(`Error: ${err.error || "Failed to update"}`);
+      }
+    } catch (error) {
+      alert("Network error while updating");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -93,7 +124,11 @@ export default function UploadFetchList({ initialUploads, categories }) {
               </h3>
               <div className="flex flex-wrap gap-2 mt-2">
                 <span className="text-xs font-bold bg-gray-100 text-gray-700 px-3 py-1 rounded-full">{item.category}</span>
-                <span className="text-xs font-mono text-gray-400 mt-1 uppercase">Slug: {item.slug}</span>
+                {item.description && (
+                  <span className="text-xs font-normal text-gray-500 mt-1 truncate max-w-md">
+                    {item.description}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -105,7 +140,7 @@ export default function UploadFetchList({ initialUploads, categories }) {
                 <BiPencil size={20} className="mx-auto" />
               </button>
               <button 
-                onClick={() => handleDelete(item._id)}
+                onClick={() => initiateDelete(item._id)} 
                 className="flex-1 md:flex-none p-4 bg-red-50 text-red-600 rounded-2xl hover:bg-red-600 hover:text-white transition-all"
               >
                 <BiTrash size={20} className="mx-auto" />
@@ -115,7 +150,7 @@ export default function UploadFetchList({ initialUploads, categories }) {
         ))}
       </div>
 
-      {/* Edit Modal (High Contrast) */}
+      {/* EDIT MODAL */}
       {editItem && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[100] flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white w-full max-w-xl rounded-[2.5rem] p-8 shadow-2xl">
@@ -137,9 +172,19 @@ export default function UploadFetchList({ initialUploads, categories }) {
               </div>
 
               <div>
+                <label className="text-sm font-black text-black block mb-2">Description</label>
+                <textarea 
+                  rows="3"
+                  className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-black font-bold outline-none focus:border-black placeholder:text-gray-400"
+                  value={editItem.description || ""} 
+                  onChange={e => setEditItem({...editItem, description: e.target.value})}
+                />
+              </div>
+
+              <div>
                 <label className="text-sm font-black text-black block mb-2">Tags (Enter to add)</label>
                 <div className="flex flex-wrap gap-2 p-3 bg-gray-50 border-2 border-gray-100 rounded-2xl focus-within:border-black">
-                  {editItem.tags.map((tag, i) => (
+                  {(editItem.tags || []).map((tag, i) => (
                     <span key={i} className="bg-black text-white px-3 py-1 rounded-lg flex items-center gap-1 text-sm font-bold">
                       {tag} <BiX className="cursor-pointer" onClick={() => setEditItem({...editItem, tags: editItem.tags.filter((_, idx) => idx !== i)})} />
                     </span>
@@ -163,6 +208,16 @@ export default function UploadFetchList({ initialUploads, categories }) {
                   {categories.map(c => <option key={c._id} value={c.name}>{c.name}</option>)}
                 </select>
               </div>
+
+              <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border-2 border-gray-100 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="w-5 h-5 accent-black cursor-pointer"
+                  checked={editItem.commentsEnabled} 
+                  onChange={e => setEditItem({...editItem, commentsEnabled: e.target.checked})}
+                />
+                <label className="font-black text-black cursor-pointer select-none">Allow user comments on this PDF</label>
+              </div>
             </div>
 
             <button 
@@ -172,6 +227,38 @@ export default function UploadFetchList({ initialUploads, categories }) {
             >
               {loading ? "Updating..." : "Save Changes"}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* CUSTOM DELETE MODAL (Simple - No Typing) */}
+      {deleteId && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[110] flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl border-2 border-red-100 text-center">
+            <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <BiErrorAlt size={32} />
+            </div>
+            
+            <h2 className="text-2xl font-black text-black mb-2">Delete Document?</h2>
+            <p className="text-gray-600 font-medium mb-8">
+              This action cannot be undone. Are you sure you want to permanently delete this document?
+            </p>
+
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setDeleteId(null)}
+                className="flex-1 py-3 bg-white border-2 border-gray-200 text-black rounded-xl font-bold hover:bg-gray-50 transition-all"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmDelete}
+                disabled={deleting}
+                className="flex-1 py-3 bg-red-600 text-white rounded-xl font-black hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all flex justify-center items-center gap-2"
+              >
+                {deleting ? 'Deleting...' : 'Yes, Delete'}
+              </button>
+            </div>
           </div>
         </div>
       )}

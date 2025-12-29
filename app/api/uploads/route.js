@@ -34,7 +34,7 @@ export async function POST(req) {
       title: data.title,
       description: data.desc || "",
       pdfUrl: data.pdfUrl,
-      tags: Array.isArray(data.tags) ? data.tags : [], // Ensure it's an array
+      tags: Array.isArray(data.tags) ? data.tags : [], 
       category: data.category || "Others",
       commentsEnabled: data.comments ?? true,
       slug: slug,
