@@ -7,6 +7,7 @@ const slugify = (text) => text.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+
 export async function PUT(req, { params }) {
   try {
     await connectionToDatabase();
+    
     const { name } = await req.json();
     const slug = slugify(name);
     const updated = await Category.findByIdAndUpdate(
