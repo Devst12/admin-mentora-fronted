@@ -1,7 +1,7 @@
 import CategoryList from "../components/categories/categories";
 
 async function getCategories() {
-  const API_URL = "http://localhost:8000/api/categories";
+  const API_URL = `${process.env.NEXT_PUBLIC_API_URL}/api/categories`;
 
   try {
     const res = await fetch(API_URL, { 

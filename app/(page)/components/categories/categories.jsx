@@ -10,7 +10,7 @@ export default function CategoryList({ initialCategories }) {
   const [loading, setLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false); // Success feedback state
 
-  const API_BASE = "http://localhost:8000/api/categories";
+  const API_BASE = `${process.env.NEXT_PUBLIC_API_URL}/api/categories`;
 
   const handleOpenModal = (cat = null) => {
     setShowSuccess(false);
